@@ -607,30 +607,93 @@ function showLog(){document.getElementById('loginBox').style.display='block';doc
 function showReg(){document.getElementById('loginBox').style.display='none';document.getElementById('regBox').style.display='block'}
 
 document.getElementById('logBtn').onclick=async()=>{
-  const e=document.getElementById('logEmail').value.trim(),p=document.getElementById('logPass').value,er=document.getElementById('loginErr');
-  er.textContent='';if(!e||!p){er.textContent='Заполните все поля';return}
-  try{await auth.signInWithEmailAndPassword(e,p)}catch(x){er.textContent=authE(x.code)}
+  const e=document.getElementById('logEmail').value.trim();
+  const p=document.getElementById('logPass').value;
+  const er=document.getElementById('loginErr');
+  const btn=document.getElementById('logBtn');
+  er.textContent='';
+
+  if(!e||!p){er.textContent='Заполните все поля';return}
+
+  btn.textContent='Вход...';
+  btn.disabled=true;
+
+  try{
+    await auth.signInWithEmailAndPassword(e,p);
+  }catch(x){
+    console.error('Login error:', x);
+    er.textContent=authE(x.code||x.message);
+    btn.textContent='Войти';
+    btn.disabled=false;
+  }
 };
 
 document.getElementById('regBtn').onclick=async()=>{
-  const nm=document.getElementById('regName').value.trim(),un=document.getElementById('regUname').value.trim().toLowerCase();
-  const em=document.getElementById('regEmail').value.trim(),p1=document.getElementById('regPass').value,p2=document.getElementById('regPass2').value;
-  const er=document.getElementById('regErr');er.textContent='';
+  const nm=document.getElementById('regName').value.trim();
+  const un=document.getElementById('regUname').value.trim().toLowerCase();
+  const em=document.getElementById('regEmail').value.trim();
+  const p1=document.getElementById('regPass').value;
+  const p2=document.getElementById('regPass2').value;
+  const er=document.getElementById('regErr');
+  const btn=document.getElementById('regBtn');
+  er.textContent='';
+
+  // Валидация
   if(!nm||!un||!em||!p1){er.textContent='Заполните все поля';return}
   if(!validUname(un)){er.textContent='Юзернейм: 3-20 символов, только a-z, 0-9, _, -';return}
   if(p1!==p2){er.textContent='Пароли не совпадают';return}
   if(p1.length<6){er.textContent='Пароль мин. 6 символов';return}
-  // Check username taken
-  const ex=await db.collection('users').where('username','==',un).get();
-  if(!ex.empty){er.textContent='Юзернейм занят';return}
+
+  btn.textContent='Создание...';
+  btn.disabled=true;
+
   try{
+    // 1. Сначала создаём аккаунт в Firebase Auth
     const cr=await auth.createUserWithEmailAndPassword(em,p1);
+
+    // 2. Теперь мы авторизованы — проверяем юзернейм
+    let unameTaken=false;
+    try{
+      const ex=await db.collection('users').where('username','==',un).get();
+      unameTaken=!ex.empty;
+    }catch(e){
+      console.warn('Username check failed, continuing:', e);
+    }
+
+    if(unameTaken){
+      // Удаляем только что созданный аккаунт
+      await cr.user.delete();
+      er.textContent='Юзернейм занят';
+      btn.textContent='Создать аккаунт';
+      btn.disabled=false;
+      return;
+    }
+
+    // 3. Сохраняем профиль
     await cr.user.updateProfile({displayName:nm});
+
+    // 4. Создаём документ пользователя
     await db.collection('users').doc(cr.user.uid).set({
-      name:nm,username:un,email:em,bio:'',avatar:'',status:'online',
-      contacts:[],lastSeen:TS(),createdAt:TS()
+      name:nm,
+      username:un,
+      email:em,
+      bio:'',
+      avatar:'',
+      status:'online',
+      contacts:[],
+      lastSeen:TS(),
+      createdAt:TS()
     });
-  }catch(x){er.textContent=authE(x.code)}
+
+    console.log('Registration successful:', un);
+    // onAuthStateChanged подхватит и откроет приложение
+
+  }catch(x){
+    console.error('Registration error:', x);
+    er.textContent=authE(x.code||x.message);
+    btn.textContent='Создать аккаунт';
+    btn.disabled=false;
+  }
 };
 
 function authE(c){
@@ -687,14 +750,24 @@ auth.onAuthStateChanged(async u=>{
 // ========== USERNAME SETUP ==========
 async function saveSetupUname(){
   const un=document.getElementById('setupUname').value.trim().toLowerCase();
-  const er=document.getElementById('setupErr');er.textContent='';
+  const er=document.getElementById('setupErr');
+  er.textContent='';
+
   if(!validUname(un)){er.textContent='3-20 символов: a-z, 0-9, _, -';return}
-  const ex=await db.collection('users').where('username','==',un).get();
-  if(!ex.empty){er.textContent='Юзернейм занят';return}
-  await db.collection('users').doc(CU.uid).update({username:un});
-  myData.username=un;users[CU.uid].username=un;
-  clsM('unameModal');loadProf();loadChats();
-  toast('Юзернейм установлен ✓');
+
+  try{
+    const ex=await db.collection('users').where('username','==',un).get();
+    if(!ex.empty){er.textContent='Юзернейм занят';return}
+    await db.collection('users').doc(CU.uid).update({username:un});
+    myData.username=un;
+    users[CU.uid].username=un;
+    clsM('unameModal');
+    loadProf();loadChats();
+    toast('Юзернейм установлен ✓');
+  }catch(e){
+    console.error('Username setup error:', e);
+    er.textContent='Ошибка: '+e.message;
+  }
 }
 
 // ========== PROFILE ==========
