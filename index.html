@@ -293,10 +293,7 @@ textarea{resize:vertical;min-height:50px}
 .prof-int{padding:4px 10px;border-radius:14px;background:var(--bg3);font-size:11px;display:flex;align-items:center;gap:4px;color:var(--tx2)}
 
 /* Edit fields */
-.pfld{margin-bottom:14px;display:flex;flex-direction:column;gap:6px}.pfld label{display:block;font-size:12px;color:var(--tx2);font-weight:500;padding-left:2px}.pfld input,.pfld textarea{width:100%;box-sizing:border-box;min-width:0}
-.prof-contacts,.pick-contacts{display:flex;flex-wrap:wrap;gap:6px;margin-top:6px}.contact-chip{display:flex;align-items:center;gap:6px;padding:6px 10px;border-radius:999px;background:var(--bg3);font-size:11px;cursor:pointer;transition:var(--trf)}.contact-chip:hover{background:var(--bgH)}.contact-chip.sel{background:var(--acL);border:1px solid var(--ac)}.contact-chip .uav{width:22px;height:22px;font-size:10px}
-.contact-empty{font-size:12px;color:var(--tx2);padding:8px 2px}
-.prof-edit-grid{display:grid;grid-template-columns:1fr;gap:10px}.prof-edit-card{padding:12px;background:var(--bgI);border:1px solid var(--brd);border-radius:14px}
+.pfld{margin-bottom:14px}.pfld label{display:block;font-size:12px;color:var(--tx2);margin-bottom:4px;font-weight:500}
 
 /* Settings */
 .stsec{margin-bottom:18px}.stsec h4{font-size:11px;color:var(--ac);text-transform:uppercase;letter-spacing:.8px;padding:6px 12px;font-weight:600}
@@ -538,7 +535,6 @@ textarea{resize:vertical;min-height:50px}
 <div class="fg"><label>Юзернейм</label><input type="text" id="grpUn" placeholder="group_name" autocapitalize="off"></div>
 <div class="fg"><label>Описание</label><textarea id="grpDesc"></textarea></div>
 <div class="fg"><label>Тип</label><div class="vis-toggle"><div class="vis-opt act" onclick="setVis(this,'open')">🌐 Открытая</div><div class="vis-opt" onclick="setVis(this,'closed')">🔒 Закрытая</div></div></div>
-<div class="fg"><label>Контакты</label><div class="pick-contacts" id="grpContacts"></div></div>
 <div class="fg"><label>Участники</label><input type="text" id="grpUSrch" placeholder="Юзернейм..." autocapitalize="off"></div>
 <div class="selus" id="grpSelUs"></div><div id="grpURes"></div>
 </div><div class="mftr"><button class="btn btn2" onclick="clsM('newGrpModal')">Отмена</button><button class="btn btn1" onclick="createGrp()">Создать</button></div></div></div>
@@ -548,9 +544,6 @@ textarea{resize:vertical;min-height:50px}
 <div class="fg"><label>Юзернейм</label><input type="text" id="chnUn" autocapitalize="off"></div>
 <div class="fg"><label>Описание</label><textarea id="chnDesc"></textarea></div>
 <div class="fg"><label>Тип</label><div class="vis-toggle" id="chnVis"><div class="vis-opt act" onclick="setVis(this,'open')">🌐 Открытый</div><div class="vis-opt" onclick="setVis(this,'closed')">🔒 Закрытый</div></div></div>
-<div class="fg"><label>Контакты</label><div class="pick-contacts" id="chnContacts"></div></div>
-<div class="fg"><label>Участники</label><input type="text" id="chnUSrch" placeholder="Юзернейм..." autocapitalize="off"></div>
-<div class="selus" id="chnSelUs"></div><div id="chnURes"></div>
 </div><div class="mftr"><button class="btn btn2" onclick="clsM('newChnModal')">Отмена</button><button class="btn btn1" onclick="createChn()">Создать</button></div></div></div>
 
 <div class="mov" id="upModal"><div class="modal" style="max-width:340px"><div class="mhdr"><h2>Отправить</h2><button class="mcls" onclick="clsM('upModal')">✕</button></div>
@@ -594,13 +587,13 @@ textarea{resize:vertical;min-height:50px}
 <input type="file" id="storyPhotoInp" style="display:none" accept="image/*">
 
 <script>
-const firebaseConfig={apiKey:"AIzaSyBQcNLG9h39iVzuT_SCHLDS_Caxi09laco",authDomain:"nexuschat-97bd7.firebaseapp.com",projectId:"nexuschat-97bd7",storageBucket:"nexuschat-97bd7.firebasestorage.app",messagingSenderId:"43601230346",appId:"1:43601230346:web:a572e7403ee7b121693df3"};
+const firebaseConfig={apiKey:"YOUR_API_KEY",authDomain:"YOUR_PROJECT.firebaseapp.com",projectId:"YOUR_PROJECT_ID",storageBucket:"YOUR_PROJECT.appspot.com",messagingSenderId:"YOUR_SENDER_ID",appId:"YOUR_APP_ID"};
 firebase.initializeApp(firebaseConfig);
 const auth=firebase.auth(),db=firebase.firestore();
 const TS=firebase.firestore.FieldValue.serverTimestamp,INC=firebase.firestore.FieldValue.increment,DEL=firebase.firestore.FieldValue.delete,ARU=firebase.firestore.FieldValue.arrayUnion,ARM=firebase.firestore.FieldValue.arrayRemove;
 
 let CU=null,curChat=null,curCD=null,myData=null,chats={},users={},unsubs={},onlineCache={};
-let replyTo=null,ctxMsg=null,editMsg=null,selGU=[],selCHN=[],pendFile=null,cropTarget=null,grpAvB64='',chnAvB64='',createVis='open',attachedPhoto=null;
+let replyTo=null,ctxMsg=null,editMsg=null,selGU=[],pendFile=null,cropTarget=null,grpAvB64='',chnAvB64='',createVis='open',attachedPhoto=null;
 let mediaRec=null,recChunks=[],recTimer=null,recSec=0,storyPhotoB64='';
 
 let S={theme:'dark',fontSize:14,enterSend:true,sound:true,accentColor:'#7c5cfc'};
@@ -618,9 +611,6 @@ const fmtDate=d=>{if(!d)return'';const t=new Date,y=new Date(t);y.setDate(y.getD
 const fmtSize=b=>{if(!b)return'0';const k=1024,s=['Б','КБ','МБ'];const i=Math.min(Math.floor(Math.log(b)/Math.log(k)),2);return(b/Math.pow(k,i)).toFixed(1)+s[i]};
 const fmtText=t=>esc(t).replace(/(https?:\/\/[^\s]+)/g,'<a href="$1" target="_blank">$1</a>');
 const validUn=u=>/^[a-zA-Z0-9_-]{3,20}$/.test(u);
-const normUname=u=>(u||'').trim().toLowerCase();
-const getContacts=()=>((myData?.contacts)||[]).filter(Boolean).filter((v,i,a)=>a.indexOf(v)===i&&v!==CU?.uid);
-const isContact=uid=>getContacts().includes(uid);
 const debounce=(fn,d)=>{let t;return function(...a){clearTimeout(t);t=setTimeout(()=>fn.apply(this,a),d)}};
 const toast=m=>{const t=document.getElementById('toast');t.textContent=m;t.classList.add('show');clearTimeout(t._t);t._t=setTimeout(()=>t.classList.remove('show'),3000)};
 const openM=id=>document.getElementById(id).classList.add('act');
@@ -664,7 +654,7 @@ auth.onAuthStateChanged(async u=>{
     else{await db.collection('users').doc(u.uid).set({name:u.displayName||'User',username:'',email:u.email,bio:'',avatar:'',status:'online',blocked:[],contacts:[],music:null,integrations:{},emojiStatus:'',lastSeen:TS(),createdAt:TS()});myData={name:u.displayName||'User',username:''};splash.classList.add('hide');document.getElementById('app').style.display='block';openM('unameModal');return}
     await db.collection('users').doc(u.uid).update({status:'online',lastSeen:TS()}).catch(()=>{});
     splash.classList.add('hide');document.getElementById('app').style.display='block';
-    ensureFavorites();loadChats();loadStories();setupPresence();renderContactsPickers();
+    ensureFavorites();loadChats();loadStories();setupPresence();
     // Listen to own profile changes for real-time avatar updates
     db.collection('users').doc(u.uid).onSnapshot(d=>{if(d.exists){myData=d.data();users[u.uid]={id:u.uid,...myData}}});
   }else{CU=null;myData=null;splash.classList.add('hide');document.getElementById('authScr').classList.add('act');document.getElementById('app').style.display='none'}
@@ -681,37 +671,11 @@ function setupPresence(){
   window.addEventListener('pagehide',goOffline);
 }
 
-async function saveSetupUname(){const un=normUname(document.getElementById('setupUname').value),er=document.getElementById('setupErr');er.textContent='';if(!validUn(un)){er.textContent='Невалидный';return}try{const ex=await db.collection('users').where('username','==',un).get();if(!ex.empty){er.textContent='Занят';return}await db.collection('users').doc(CU.uid).update({username:un});myData.username=un;clsM('unameModal');loadChats();loadStories();renderContactsPickers();toast('✓')}catch(e){er.textContent=e.message}}
+async function saveSetupUname(){const un=document.getElementById('setupUname').value.trim().toLowerCase(),er=document.getElementById('setupErr');er.textContent='';if(!validUn(un)){er.textContent='Невалидный';return}try{const ex=await db.collection('users').where('username','==',un).get();if(!ex.empty){er.textContent='Занят';return}await db.collection('users').doc(CU.uid).update({username:un});myData.username=un;clsM('unameModal');loadChats();loadStories();toast('✓')}catch(e){er.textContent=e.message}}
 
 // Favorites
 async function ensureFavorites(){const snap=await db.collection('chats').where('type','==','favorites').where('owner','==',CU.uid).get();if(snap.empty){await db.collection('chats').add({type:'favorites',name:'Избранное',owner:CU.uid,members:[CU.uid],createdAt:TS(),lastMessage:'',lastMessageTime:TS(),unread:{[CU.uid]:0}})}}
 function openFavorites(){clsDD('mainMenu');for(const[id,ch]of Object.entries(chats)){if(ch.type==='favorites'&&ch.owner===CU.uid){openChat(id);return}}}
-
-async function toggleContact(uid){
-  if(!uid||uid===CU.uid)return;
-  const has=isContact(uid);
-  try{
-    await db.collection('users').doc(CU.uid).update({contacts:has?ARM(uid):ARU(uid)});
-    myData.contacts=has?(myData.contacts||[]).filter(x=>x!==uid):[...(myData.contacts||[]),uid];
-    users[CU.uid]={id:CU.uid,...myData};
-    toast(has?'Убрано из контактов':'Добавлено в контакты');
-    renderProfilePanel();
-    renderContactsPickers();
-  }catch(e){toast(e.message||'Ошибка контактов')}
-}
-
-function renderContactsPickers(){
-  const grp=document.getElementById('grpContacts');
-  const chn=document.getElementById('chnContacts');
-  const render=(wrap,selected,addFn)=>{
-    if(!wrap)return;
-    const ids=getContacts();
-    if(!ids.length){wrap.innerHTML='<div class="contact-empty">Контактов пока нет</div>';return}
-    wrap.innerHTML=ids.map(uid=>{const u=users[uid]||{name:'User',username:''};const sel=selected.includes(uid);return `<div class="contact-chip ${sel?'sel':''}" onclick="${addFn}('${uid}')"><div class="uav" style="background:${getCol(uid)}">${u.avatar?`<img src="${u.avatar}">`:(u.name||'?')[0].toUpperCase()}</div><div><div style="font-size:11px;font-weight:500">${esc(u.name||'User')}</div><div style="font-size:10px;color:var(--tx2)">@${esc(u.username||'')}</div></div></div>`}).join('')
-  };
-  render(grp,selGU,'tglGU');
-  render(chn,selCHN,'tglCHN');
-}
 
 // Avatar crop - fixed for group/channel
 function triggerCrop(target){cropTarget=target;const inp=target==='profile'?'avInp':target==='group'?'grpAvInp':'chnAvInp';document.getElementById(inp).click()}
@@ -730,9 +694,7 @@ function renderProfilePanel(){
   const d=myData;if(!d)return;
   const musicHtml=d.music?`<div class="prof-music"><span class="music-icon">🎵</span>${esc(d.music.title)} — ${esc(d.music.artist)}</div>`:'';
   const ints=d.integrations||{};
-  const contacts=getContacts();
   let intHtml='';if(Object.values(ints).some(v=>v))intHtml='<div class="prof-integrations">'+Object.entries(ints).filter(([k,v])=>v).map(([k,v])=>`<div class="prof-int">${{github:'🐙',twitter:'🐦',telegram:'✈️',discord:'🎮',website:'🌐'}[k]||'🔗'} ${esc(v)}</div>`).join('')+'</div>';
-  const contactsHtml=contacts.length?contacts.map(uid=>{const u=users[uid]||{name:'User'};return `<div class="contact-chip" onclick="showUserProf('${uid}')"><div class="uav" style="background:${getCol(uid)}">${u.avatar?`<img src="${u.avatar}">`:(u.name||'?')[0].toUpperCase()}</div><div><div style="font-size:11px;font-weight:500">${esc(u.name||'User')}</div><div style="font-size:10px;color:var(--tx2)">@${esc(u.username||'')}</div></div></div>`}).join(''):'<div class="contact-empty">Пока нет контактов</div>';
   document.getElementById('profBody').innerHTML=`
   <div class="prof-hero">
     <div class="prof-av" onclick="triggerCrop('profile')"><div class="prof-av-inner">${d.avatar?`<img src="${d.avatar}">`:(d.name||'?')[0].toUpperCase()}</div><div class="aov">📷</div>
@@ -742,30 +704,80 @@ function renderProfilePanel(){
     <div class="prof-bio">${esc(d.bio||'Нет описания')}</div>
     ${musicHtml}${intHtml}
   </div>
-  <div class="prof-edit-grid">
-    <div class="prof-edit-card">
-      <div class="pfld"><label>Имя</label><input type="text" id="profNmI" value="${esc(d.name||'')}"></div>
-      <div class="pfld"><label>Юзернейм</label><input type="text" id="profUnI" value="${esc(d.username||'')}" autocapitalize="off"></div>
-      <div class="pfld"><label>О себе</label><textarea id="profBioI">${esc(d.bio||'')}</textarea></div>
-    </div>
-    <div class="prof-edit-card">
-      <div class="pfld" style="margin-bottom:8px"><label>Контакты</label><div class="prof-contacts">${contactsHtml}</div></div>
-    </div>
-  </div>
-  <div style="display:flex;gap:8px;margin:14px 0;flex-wrap:wrap">
+  <div class="pfld"><label>Имя</label><input type="text" id="profNmI" value="${esc(d.name||'')}"></div>
+  <div class="pfld"><label>Юзернейм</label><input type="text" id="profUnI" value="${esc(d.username||'')}" autocapitalize="off"></div>
+  <div class="pfld"><label>О себе</label><textarea id="profBioI">${esc(d.bio||'')}</textarea></div>
+  <div style="display:flex;gap:8px;margin-bottom:14px;flex-wrap:wrap">
     <button class="btn btn2" onclick="openM('musicModal')">🎵 Музыка</button>
     <button class="btn btn2" onclick="openM('intModal')">🔗 Интеграции</button>
     <button class="btn btn2" onclick="openM('emojiStatusModal')">😀 Статус</button>
   </div>
   <button class="btn btn1" style="width:100%" onclick="saveProf()">Сохранить</button>`;
+  // Fill music/int fields
   if(d.music){document.getElementById('musicTitle').value=d.music.title||'';document.getElementById('musicArtist').value=d.music.artist||''}
   const ig=d.integrations||{};
   setTimeout(()=>{['github','twitter','telegram','discord','website'].forEach(k=>{const el=document.getElementById('int'+k.charAt(0).toUpperCase()+k.slice(1));if(el)el.value=ig[k]||''})},50);
   renderEmojiStatusGrid();
-  renderContactsPickers();
 }
 
-async function saveProf(){const nm=document.getElementById('profNmI').value.trim(),un=normUname(document.getElementById('profUnI').value),bio=document.getElementById('profBioI').value.trim();if(!nm){toast('Имя');return}if(!validUn(un)){toast('Юзернейм');return}if(un!==myData.username){const ex=await db.collection('users').where('username','==',un).get();if(!ex.empty){toast('Занят');return}}await db.collection('users').doc(CU.uid).update({name:nm,username:un,bio});await CU.updateProfile({displayName:nm});myData.name=nm;myData.username=un;myData.bio=bio;users[CU.uid]={id:CU.uid,...myData};toast('Сохранено ✓');renderProfilePanel();loadChats()}
+async function saveProf(){const nm=document.getElementById('profNmI').value.trim(),un=document.getElementById('profUnI').value.trim().toLowerCase(),bio=document.getElementById('profBioI').value.trim();if(!nm){toast('Имя');return}if(!validUn(un)){toast('Юзернейм');return}if(un!==myData.username){const ex=await db.collection('users').where('username','==',un).get();if(!ex.empty){toast('Занят');return}}await db.collection('users').doc(CU.uid).update({name:nm,username:un,bio});await CU.updateProfile({displayName:nm});toast('Сохранено ✓');renderProfilePanel()}
+async function saveMusic(){const t=document.getElementById('musicTitle').value.trim(),a=document.getElementById('musicArtist').value.trim();if(!t){toast('Введите название');return}await db.collection('users').doc(CU.uid).update({music:{title:t,artist:a}});clsM('musicModal');toast('Музыка добавлена ✓');renderProfilePanel()}
+async function clearMusic(){await db.collection('users').doc(CU.uid).update({music:null});clsM('musicModal');toast('Убрано');renderProfilePanel()}
+async function saveIntegrations(){const ig={github:document.getElementById('intGithub').value.trim(),twitter:document.getElementById('intTwitter').value.trim(),telegram:document.getElementById('intTelegram').value.trim(),discord:document.getElementById('intDiscord').value.trim(),website:document.getElementById('intWebsite').value.trim()};await db.collection('users').doc(CU.uid).update({integrations:ig});clsM('intModal');toast('Сохранено ✓');renderProfilePanel()}
+function renderEmojiStatusGrid(){const emojis=['😀','😎','🥳','😍','🤔','😴','🏠','💻','🎮','🎵','📚','🏃','✈️','🎉','❤️','🔥','⭐','🌙','☀️','🌊','🍕','☕','💪','🤝','👋','🙏','✅','❌','⏰','💤'];document.getElementById('emojiStatusGrid').innerHTML=emojis.map(e=>`<div class="eit" onclick="setEmojiStatus('${e}')">${e}</div>`).join('')}
+async function setEmojiStatus(e){await db.collection('users').doc(CU.uid).update({emojiStatus:e});clsM('emojiStatusModal');toast('Статус: '+e);renderProfilePanel()}
+
+// Settings
+function renderSettings(){document.getElementById('settBody').innerHTML=`
+<div class="stsec"><h4>🎨 Внешний вид</h4>
+<div class="stit"><span class="sti">🌙</span><div class="stc"><div class="stl">Тёмная тема</div></div><div class="tgl ${S.theme==='dark'?'on':''}" onclick="S.theme=S.theme==='dark'?'light':'dark';applyS();saveS();renderSettings()"></div></div>
+<div class="stit"><span class="sti">🔤</span><div class="stc"><div class="stl">Размер шрифта</div></div><select class="stsel" onchange="S.fontSize=+this.value;applyS();saveS()"><option value="12" ${S.fontSize===12?'selected':''}>Мелкий</option><option value="14" ${S.fontSize===14?'selected':''}>Обычный</option><option value="16" ${S.fontSize===16?'selected':''}>Крупный</option><option value="18" ${S.fontSize===18?'selected':''}>Большой</option></select></div>
+</div>
+<div class="stsec"><h4>⌨️ Чат</h4>
+<div class="stit"><span class="sti">↵</span><div class="stc"><div class="stl">Отправка по Enter</div><div class="std">Shift+Enter — перенос</div></div><div class="tgl ${S.enterSend!==false?'on':''}" onclick="S.enterSend=!S.enterSend;saveS();renderSettings()"></div></div>
+<div class="stit"><span class="sti">🔊</span><div class="stc"><div class="stl">Звук</div></div><div class="tgl ${S.sound!==false?'on':''}" onclick="S.sound=!S.sound;saveS();renderSettings()"></div></div>
+</div>
+<div class="stsec"><h4>ℹ️</h4>
+<div class="stit" onclick="showLegal('trm')"><span class="sti">📄</span><div class="stc"><div class="stl">Условия</div></div></div>
+<div class="stit" onclick="showLegal('prv')"><span class="sti">🔒</span><div class="stc"><div class="stl">Конфиденциальность</div></div></div>
+<div class="stit"><span class="sti">📱</span><div class="stc"><div class="stl">NexusChat v4.0</div></div></div>
+</div>`}
+
+function renderUpdates(){document.getElementById('updatesBody').innerHTML=`
+<div class="cl-v"><h3>🎉 v4.0 — Мега-обновление</h3><div class="cl-d">3 апреля 2026</div><ul>
+<li>🎨 Полная переработка дизайна — тёмно-фиолетовая тема с градиентами</li>
+<li>📖 Сторис как в Telegram</li><li>😀 Эмодзи-статус</li><li>🎵 Музыка в профиле</li>
+<li>⭐ Чат «Избранное»</li><li>🔄 Переключение между аккаунтами</li><li>🔗 Интеграции профиля (GitHub, Twitter, Discord...)</li>
+<li>👤 Переработанный профиль</li><li>🎤 Голосовые сообщения</li><li>📥 Архивация чатов</li>
+<li>📢 Переработанные каналы</li><li>😊 Улучшенные реакции</li><li>🖼️ Фото без рамок</li>
+<li>⬇️ Кнопка «вниз» в чате</li><li>🟢 Исправлен онлайн-статус</li><li>🔄 Реальное время везде</li>
+<li>✨ Плавные анимации</li><li>🐛 Исправлено множество багов</li>
+</ul></div>
+<div class="cl-v"><h3>v3.0</h3><div class="cl-d">Июнь 2025</div><ul><li>Глобальный поиск</li><li>Реакции</li><li>Редактирование</li><li>Блокировка</li></ul></div>
+<div class="cl-v"><h3>v2.0</h3><div class="cl-d">Май 2025</div><ul><li>Юзернеймы</li><li>Просмотр профилей</li></ul></div>
+<div class="cl-v"><h3>v1.0</h3><div class="cl-d">Апрель 2025</div><ul><li>Первый релиз</li></ul></div>`}
+
+// Get user with real-time listener
+async function getUser(uid){if(users[uid])return users[uid];try{const d=await db.collection('users').doc(uid).get();if(d.exists){users[uid]={id:uid,...d.data()};return users[uid]}}catch(e){}return null}
+function listenUser(uid){if(unsubs['u_'+uid])return;unsubs['u_'+uid]=db.collection('users').doc(uid).onSnapshot(d=>{if(!d.exists)return;users[uid]={id:uid,...d.data()};onlineCache[uid]=d.data().status==='online';document.querySelectorAll(`.online-badge[data-uid="${uid}"]`).forEach(b=>{b.className='online-badge '+(onlineCache[uid]?'on':'off')});if(curChat&&curCD?.type==='direct'){const oid=curCD.members.find(m=>m!==CU.uid);if(oid===uid){document.getElementById('chSts').textContent=d.data().status==='online'?'онлайн':'был(а) недавно';document.getElementById('chSts').className='sts'+(d.data().status==='online'?' on':'')}}})}
+
+// Stories
+function loadStories(){db.collection('stories').where('createdAt','>',new Date(Date.now()-86400000)).orderBy('createdAt','desc').onSnapshot(async snap=>{const bar=document.getElementById('storiesBar');const storyUsers={};snap.forEach(d=>{const s=d.data();if(!storyUsers[s.userId])storyUsers[s.userId]={user:s.userId,stories:[{id:d.id,...s}]};else storyUsers[s.userId].stories.push({id:d.id,...s})});
+    bar.innerHTML=`<div class="story-item" onclick="openM('storyModal')"><div class="story-av my-story"><div class="story-av-inner">${myData?.avatar?`<img src="${myData.avatar}">`:'➕'}</div></div><div class="story-name">Ваш</div></div>`;
+    for(const[uid,data]of Object.entries(storyUsers)){const u=await getUser(uid);if(!u)continue;bar.innerHTML+=`<div class="story-item" onclick="viewStory('${uid}')"><div class="story-av"><div class="story-av-inner">${u.avatar?`<img src="${u.avatar}">`:(u.name||'?')[0].toUpperCase()}</div></div><div class="story-name">${esc(u.name).split(' ')[0]}</div></div>`}})}
+
+document.getElementById('storyPhotoInp').onchange=async e=>{const f=e.target.files[0];if(!f)return;storyPhotoB64=await compress64(f,600,0.6);document.getElementById('storyPhotoPreview').src=storyPhotoB64;document.getElementById('storyPhotoPreview').style.display='block';e.target.value=''};
+async function postStory(){const txt=document.getElementById('storyText').value.trim();if(!txt&&!storyPhotoB64){toast('Добавьте текст или фото');return}await db.collection('stories').add({userId:CU.uid,userName:myData.name,text:txt,photo:storyPhotoB64,createdAt:TS()});clsM('storyModal');document.getElementById('storyText').value='';storyPhotoB64='';document.getElementById('storyPhotoPreview').style.display='none';toast('Сторис опубликован ✓')}
+async function viewStory(uid){const snap=await db.collection('stories').where('userId','==',uid).where('createdAt','>',new Date(Date.now()-86400000)).orderBy('createdAt','desc').limit(1).get();if(snap.empty){toast('Нет сторис');return}const s=snap.docs[0].data();const u=await getUser(uid);document.getElementById('storyViewer').innerHTML=`<div style="padding:16px;color:#fff"><div style="display:flex;align-items:center;gap:10px;margin-bottom:16px"><div class="uav" style="width:36px;height:36px;background:${getCol(uid)}">${u?.avatar?`<img src="${u.avatar}">`:(u?.name||'?')[0].toUpperCase()}</div><div><div style="font-weight:600;font-size:14px">${esc(u?.name||'')}</div><div style="font-size:11px;color:#aaa">${s.createdAt?fmtTime(s.createdAt.toDate()):''}</div></div><button onclick="clsM('viewStoryModal')" style="margin-left:auto;color:#fff;font-size:20px">✕</button></div>${s.photo?`<img src="${s.photo}" style="width:100%;border-radius:12px;margin-bottom:12px">`:''}${s.text?`<p style="font-size:16px;line-height:1.6">${esc(s.text)}</p>`:''}</div>`;openM('viewStoryModal')}
+
+// Chats
+function loadChats(){if(unsubs._c)unsubs._c();unsubs._c=db.collection('chats').where('members','array-contains',CU.uid).onSnapshot(async snap=>{const arr=[];chats={};snap.forEach(d=>{chats[d.id]={id:d.id,...d.data()};arr.push(chats[d.id])});arr.sort((a,b)=>(b.lastMessageTime?.toMillis()||0)-(a.lastMessageTime?.toMillis()||0));const loads=[];arr.forEach(ch=>{if(ch.type==='direct'){const o=ch.members.find(m=>m!==CU.uid);if(o&&!users[o])loads.push(getUser(o))}});await Promise.all(loads);
+  const list=document.getElementById('chatList');const active=arr.filter(c=>!c.archived);const archived=arr.filter(c=>c.archived);
+  list.innerHTML='';if(!active.length&&!archived.length){list.innerHTML='<div style="text-align:center;padding:40px;color:var(--tx2)"><p>Нет чатов</p></div>';return}
+  active.forEach(ch=>renderCI(ch,list));
+  if(archived.length){list.innerHTML+=`<div class="archive-toggle" onclick="this.nextElementSibling.classList.toggle('open');this.querySelector('span:last-child').textContent=this.nextElementSibling.classList.contains('open')?'▲':'▼'">📥 Архив (${archived.length}) <span>▼</span></div><div class="archive-list"></div>`;const al=list.querySelector('.archive-list');archived.forEach(ch=>renderCI(ch,al))}
+  arr.forEach(ch=>{if(ch.type==='direct'){const o=ch.members.find(m=>m!==CU.uid);if(o)listenUser(o)}})
+})}
 
 function renderCI(ch,list){let name=ch.name||'Чат',avHtml='',onlineUid=null;
   if(ch.type==='favorites'){name='⭐ Избранное';avHtml='⭐'}
@@ -894,25 +906,22 @@ async function sendGif(u){if(!curChat)return;document.getElementById('pkr').clas
 // Create chats
 function showCreate(){clsDD('mainMenu');openM('createModal')}
 function showNewDM(){openM('newDMModal');document.getElementById('dmSrch').value='';document.getElementById('dmRes').innerHTML=''}
-function showNewGrp(){selGU=[];grpAvB64='';createVis='open';document.getElementById('grpNm').value='';document.getElementById('grpUn').value='';document.getElementById('grpDesc').value='';document.getElementById('grpSelUs').innerHTML='';document.getElementById('grpURes').innerHTML='';document.getElementById('grpAvP').innerHTML='📷';openM('newGrpModal');setTimeout(renderContactsPickers,0)}
-function showNewChn(){selCHN=[];chnAvB64='';createVis='open';document.getElementById('chnNm').value='';document.getElementById('chnUn').value='';document.getElementById('chnDesc').value='';document.getElementById('chnSelUs').innerHTML='';document.getElementById('chnURes').innerHTML='';document.getElementById('chnAvP').innerHTML='📷';openM('newChnModal');setTimeout(renderContactsPickers,0)}
+function showNewGrp(){selGU=[];grpAvB64='';createVis='open';document.getElementById('grpNm').value='';document.getElementById('grpUn').value='';document.getElementById('grpDesc').value='';document.getElementById('grpSelUs').innerHTML='';document.getElementById('grpURes').innerHTML='';document.getElementById('grpAvP').innerHTML='📷';openM('newGrpModal')}
+function showNewChn(){chnAvB64='';createVis='open';document.getElementById('chnNm').value='';document.getElementById('chnUn').value='';document.getElementById('chnDesc').value='';document.getElementById('chnAvP').innerHTML='📷';openM('newChnModal')}
 
-async function searchUsersByUsername(q, limit=10){const s=await db.collection('users').where('username','>=',q).where('username','<=',q+'\uf8ff').limit(limit).get();const arr=[];s.forEach(d=>{if(d.id===CU.uid)return;const u=d.data();users[d.id]={id:d.id,...u};arr.push({id:d.id,...u,id:d.id})});return arr}
+document.getElementById('dmSrch').oninput=debounce(async e=>{const q=e.target.value.trim().toLowerCase();const c=document.getElementById('dmRes');if(!q){c.innerHTML='';return}const s=await db.collection('users').where('username','>=',q).where('username','<=',q+'\uf8ff').limit(10).get();c.innerHTML='';s.forEach(d=>{if(d.id===CU.uid)return;const u=d.data();users[d.id]={id:d.id,...u};c.innerHTML+=`<div class="uli" onclick="startDM('${d.id}')"><div class="uav" style="background:${getCol(d.id)}">${u.avatar?`<img src="${u.avatar}">`:(u.name||'?')[0].toUpperCase()}</div><div><div style="font-size:13px;font-weight:500">${esc(u.name)}</div><div style="font-size:11px;color:var(--tx2)">@${esc(u.username)}</div></div></div>`});if(!c.innerHTML)c.innerHTML='<p style="text-align:center;padding:20px;color:var(--tx2)">Не найдено</p>'
+},400);
+async function startDM(uid){clsM('newDMModal');document.getElementById('sbSearch').value='';document.getElementById('searchResults').style.display='none';document.getElementById('chatList').style.display='';document.getElementById('storiesBar').style.display='';for(const[id,ch]of Object.entries(chats)){if(ch.type==='direct'&&ch.members.includes(uid)){openChat(id);return}}const ref=await db.collection('chats').add({type:'direct',members:[CU.uid,uid],createdAt:TS(),lastMessage:'',lastMessageTime:TS(),unread:{[CU.uid]:0,[uid]:0}});setTimeout(()=>{if(chats[ref.id])openChat(ref.id)},800)}
 
-document.getElementById('dmSrch').oninput=debounce(async e=>{const q=e.target.value.trim().toLowerCase();const c=document.getElementById('dmRes');if(!q){c.innerHTML='';return}const arr=await searchUsersByUsername(q,10);c.innerHTML=arr.map(u=>`<div class="uli" onclick="startDM('${u.id}')"><div class="uav" style="background:${getCol(u.id)}">${u.avatar?`<img src="${u.avatar}">`:(u.name||'?')[0].toUpperCase()}</div><div><div style="font-size:13px;font-weight:500">${esc(u.name)}</div><div style="font-size:11px;color:var(--tx2)">@${esc(u.username||'')}</div></div></div>`).join('')||'<p style="text-align:center;padding:20px;color:var(--tx2)">Не найдено</p>'},400);
-async function startDM(uid){clsM('newDMModal');document.getElementById('sbSearch').value='';document.getElementById('searchResults').style.display='none';document.getElementById('chatList').style.display='';document.getElementById('storiesBar').style.display='';for(const[id,ch]of Object.entries(chats)){if(ch.type==='direct'&&ch.members.includes(uid)){openChat(id);return}}const data={type:'direct',members:[CU.uid,uid],createdAt:TS(),lastMessage:'',lastMessageTime:TS(),unread:{[CU.uid]:0,[uid]:0}};const ref=await db.collection('chats').add(data);chats[ref.id]={id:ref.id,...data};loadChats();setTimeout(()=>openChat(ref.id),500)}
+document.getElementById('grpUSrch').oninput=debounce(async e=>{const q=e.target.value.trim().toLowerCase();const c=document.getElementById('grpURes');if(!q){c.innerHTML='';return}const s=await db.collection('users').where('username','>=',q).where('username','<=',q+'\uf8ff').limit(10).get();c.innerHTML='';s.forEach(d=>{if(d.id===CU.uid)return;const u=d.data();users[d.id]={id:d.id,...u};const sel=selGU.includes(d.id);c.innerHTML+=`<div class="uli ${sel?'sel':''}" onclick="tglGU('${d.id}')"><div class="uav" style="background:${getCol(d.id)}">${(u.name||'?')[0].toUpperCase()}</div><div><div style="font-size:13px;font-weight:500">${esc(u.name)}</div><div style="font-size:11px;color:var(--tx2)">@${esc(u.username||'')}</div></div></div>`})},400);
+function tglGU(uid){const i=selGU.indexOf(uid);if(i>=0)selGU.splice(i,1);else selGU.push(uid);document.getElementById('grpSelUs').innerHTML=selGU.map(id=>{const u=users[id]||{name:'User'};return`<div class="uchip">${esc(u.name)}<span class="rx" onclick="tglGU('${id}')">✕</span></div>`}).join('');document.getElementById('grpUSrch').dispatchEvent(new Event('input'))}
 
-document.getElementById('grpUSrch').oninput=debounce(async e=>{const q=e.target.value.trim().toLowerCase();const c=document.getElementById('grpURes');if(!q){c.innerHTML='';return}const arr=await searchUsersByUsername(q,10);c.innerHTML=arr.map(u=>{const sel=selGU.includes(u.id);return `<div class="uli ${sel?'sel':''}" onclick="tglGU('${u.id}')"><div class="uav" style="background:${getCol(u.id)}">${u.avatar?`<img src="${u.avatar}">`:(u.name||'?')[0].toUpperCase()}</div><div><div style="font-size:13px;font-weight:500">${esc(u.name)}</div><div style="font-size:11px;color:var(--tx2)">@${esc(u.username||'')}</div></div></div>`}).join('')||'<p style="text-align:center;padding:20px;color:var(--tx2)">Не найдено</p>';renderContactsPickers()},400);
-document.getElementById('chnUSrch').oninput=debounce(async e=>{const q=e.target.value.trim().toLowerCase();const c=document.getElementById('chnURes');if(!q){c.innerHTML='';return}const arr=await searchUsersByUsername(q,10);c.innerHTML=arr.map(u=>{const sel=selCHN.includes(u.id);return `<div class="uli ${sel?'sel':''}" onclick="tglCHN('${u.id}')"><div class="uav" style="background:${getCol(u.id)}">${u.avatar?`<img src="${u.avatar}">`:(u.name||'?')[0].toUpperCase()}</div><div><div style="font-size:13px;font-weight:500">${esc(u.name)}</div><div style="font-size:11px;color:var(--tx2)">@${esc(u.username||'')}</div></div></div>`}).join('')||'<p style="text-align:center;padding:20px;color:var(--tx2)">Не найдено</p>';renderContactsPickers()},400);
-function tglGU(uid){const i=selGU.indexOf(uid);if(i>=0)selGU.splice(i,1);else selGU.push(uid);document.getElementById('grpSelUs').innerHTML=selGU.map(id=>{const u=users[id]||{name:'User'};return`<div class="uchip">${esc(u.name)}<span class="rx" onclick="tglGU('${id}')">✕</span></div>`}).join('');document.getElementById('grpUSrch').dispatchEvent(new Event('input'));renderContactsPickers()}
-function tglCHN(uid){const i=selCHN.indexOf(uid);if(i>=0)selCHN.splice(i,1);else selCHN.push(uid);document.getElementById('chnSelUs').innerHTML=selCHN.map(id=>{const u=users[id]||{name:'User'};return`<div class="uchip">${esc(u.name)}<span class="rx" onclick="tglCHN('${id}')">✕</span></div>`}).join('');document.getElementById('chnUSrch').dispatchEvent(new Event('input'));renderContactsPickers()}
-
-async function createGrp(){const nm=document.getElementById('grpNm').value.trim();if(!nm){toast('Название');return}let un=normUname(document.getElementById('grpUn').value)||'grp_'+genId(8);if(!validUn(un)){toast('Юзернейм');return}const members=[CU.uid,...selGU];const ur={};members.forEach(m=>ur[m]=0);const data={type:'group',name:nm,username:un,description:document.getElementById('grpDesc').value.trim(),avatar:grpAvB64,members,admins:[CU.uid],owner:CU.uid,visibility:createVis,createdAt:TS(),lastMessage:'Группа создана',lastMessageTime:TS(),unread:ur};const ref=await db.collection('chats').add(data);chats[ref.id]={id:ref.id,...data};clsM('newGrpModal');toast('Группа создана ✓');loadChats();setTimeout(()=>openChat(ref.id),600)}
-async function createChn(){const nm=document.getElementById('chnNm').value.trim();if(!nm){toast('Название');return}let un=normUname(document.getElementById('chnUn').value)||'chn_'+genId(8);if(!validUn(un)){toast('Юзернейм');return}const members=[CU.uid,...selCHN];const data={type:'channel',name:nm,username:un,description:document.getElementById('chnDesc').value.trim(),avatar:chnAvB64,members,admins:[CU.uid],owner:CU.uid,visibility:createVis,createdAt:TS(),lastMessage:'Канал создан',lastMessageTime:TS(),unread:{[CU.uid]:0}};const ref=await db.collection('chats').add(data);chats[ref.id]={id:ref.id,...data};clsM('newChnModal');toast('Канал создан ✓');loadChats();setTimeout(()=>openChat(ref.id),600)}
+async function createGrp(){const nm=document.getElementById('grpNm').value.trim();if(!nm){toast('Название');return}let un=document.getElementById('grpUn').value.trim().toLowerCase()||'grp_'+genId(8);if(!validUn(un)){toast('Юзернейм');return}const members=[CU.uid,...selGU];const ur={};members.forEach(m=>ur[m]=0);const ref=await db.collection('chats').add({type:'group',name:nm,username:un,description:document.getElementById('grpDesc').value.trim(),avatar:grpAvB64,members,admins:[CU.uid],owner:CU.uid,visibility:createVis,createdAt:TS(),lastMessage:'Группа создана',lastMessageTime:TS(),unread:ur});clsM('newGrpModal');toast('✓');setTimeout(()=>{if(chats[ref.id])openChat(ref.id)},800)}
+async function createChn(){const nm=document.getElementById('chnNm').value.trim();if(!nm){toast('Название');return}let un=document.getElementById('chnUn').value.trim().toLowerCase()||'chn_'+genId(8);if(!validUn(un)){toast('Юзернейм');return}const ref=await db.collection('chats').add({type:'channel',name:nm,username:un,description:document.getElementById('chnDesc').value.trim(),avatar:chnAvB64,members:[CU.uid],admins:[CU.uid],owner:CU.uid,visibility:createVis,createdAt:TS(),lastMessage:'Канал создан',lastMessageTime:TS(),unread:{[CU.uid]:0}});clsM('newChnModal');toast('✓');setTimeout(()=>{if(chats[ref.id])openChat(ref.id)},800)}
 
 // User profile
-async function showUserProf(uid){const u=await getUser(uid);if(!u)return;const bl=myData?.blocked?.includes(uid);const ct=isContact(uid);const musicHtml=u.music?`<div class="umusic">🎵 ${esc(u.music.title)} — ${esc(u.music.artist)}</div>`:'';const ints=u.integrations||{};let intHtml='';if(Object.values(ints).some(v=>v))intHtml='<div class="uints">'+Object.entries(ints).filter(([,v])=>v).map(([k,v])=>`<div class="uint">${{github:'🐙',twitter:'🐦',telegram:'✈️',discord:'🎮',website:'🌐'}[k]||'🔗'} ${esc(v)}</div>`).join('')+'</div>';
-  document.getElementById('userProfC').innerHTML=`<div class="uprf-hero"><div class="uav2" style="background:${getCol(uid)}">${u.avatar?`<img src="${u.avatar}">`:(u.name||'?')[0].toUpperCase()}</div><div class="un2">${esc(u.name)} ${u.emojiStatus||''}</div><div class="uu2">@${esc(u.username||'')}</div><div class="ust ${u.status==='online'?'on':'off'}">${u.status==='online'?'🟢 онлайн':'⚫ оффлайн'}</div>${musicHtml}${intHtml}<div class="ub2">${esc(u.bio||'Нет описания')}</div></div><div class="ubts"><button class="btn btn1" onclick="clsM('userProfModal');startDM('${uid}')">✉️ Написать</button><button class="btn ${ct?'btn2':'btn1'}" onclick="toggleContact('${uid}')">${ct?'В контактах':'Добавить в контакты'}</button>${uid!==CU.uid?`<button class="btn ${bl?'btnD':'btn2'}" onclick="toggleBlock('${uid}')">${bl?'Разблокировать':'🚫 Блокировать'}</button>`:''}</div>`;openM('userProfModal')}
+async function showUserProf(uid){const u=await getUser(uid);if(!u)return;const bl=myData?.blocked?.includes(uid);const musicHtml=u.music?`<div class="umusic">🎵 ${esc(u.music.title)} — ${esc(u.music.artist)}</div>`:'';const ints=u.integrations||{};let intHtml='';if(Object.values(ints).some(v=>v))intHtml='<div class="uints">'+Object.entries(ints).filter(([,v])=>v).map(([k,v])=>`<div class="uint">${{github:'🐙',twitter:'🐦',telegram:'✈️',discord:'🎮',website:'🌐'}[k]||'🔗'} ${esc(v)}</div>`).join('')+'</div>';
+  document.getElementById('userProfC').innerHTML=`<div class="uprf-hero"><div class="uav2" style="background:${getCol(uid)}">${u.avatar?`<img src="${u.avatar}">`:(u.name||'?')[0].toUpperCase()}</div><div class="un2">${esc(u.name)} ${u.emojiStatus||''}</div><div class="uu2">@${esc(u.username||'')}</div><div class="ust ${u.status==='online'?'on':'off'}">${u.status==='online'?'🟢 онлайн':'⚫ оффлайн'}</div>${musicHtml}${intHtml}<div class="ub2">${esc(u.bio||'Нет описания')}</div></div><div class="ubts"><button class="btn btn1" onclick="clsM('userProfModal');startDM('${uid}')">✉️ Написать</button>${uid!==CU.uid?`<button class="btn ${bl?'btnD':'btn2'}" onclick="toggleBlock('${uid}')">${bl?'Разблокировать':'🚫 Блокировать'}</button>`:''}</div>`;openM('userProfModal')}
 async function toggleBlock(uid){const bl=myData.blocked?.includes(uid);await db.collection('users').doc(CU.uid).update({blocked:bl?ARM(uid):ARU(uid)});myData.blocked=bl?(myData.blocked||[]).filter(b=>b!==uid):[...(myData.blocked||[]),uid];clsM('userProfModal');toast(bl?'Разблокирован':'Заблокирован')}
 function showChatProfile(){if(!curCD)return;if(curCD.type==='direct'){const o=curCD.members.find(m=>m!==CU.uid);showUserProf(o)}else openChatInfo()}
 
