@@ -512,6 +512,7 @@ textarea{resize:vertical;min-height:50px}
 <div class="iwrap"><textarea id="msgi" placeholder="Сообщение..." rows="1"></textarea></div>
 <div class="voice-rec" id="voiceRec"><div class="rec-dot"></div><span class="rec-time" id="recTime">0:00</span><span class="rec-cancel" onclick="cancelRec()">Отмена</span></div>
 <button class="ib" id="emoTgl">😊</button>
+<button class="ib" id="videoBtn" onclick="document.getElementById('videoInp').click()">▣</button>
 <button class="ib" id="voiceBtn" onmousedown="startRec()" onmouseup="stopRec()" ontouchstart="startRec()" ontouchend="stopRec()">🎤</button>
 <button class="ib sbtn" id="sendBtn" onclick="sendMsg()" style="display:none">➤</button>
 </div>
@@ -737,6 +738,7 @@ function renderProfilePanel(){
     <div class="prof-av" onclick="triggerCrop('profile')"><div class="prof-av-inner">${d.avatar?`<img src="${d.avatar}">`:(d.name||'?')[0].toUpperCase()}</div><div class="aov">📷</div>
       <div class="prof-emoji-status" onclick="event.stopPropagation();openM('emojiStatusModal')">${d.emojiStatus||'😀'}</div>
     </div>
+    <div class="prof-banner" onclick="document.getElementById('bannerInp').click()">${d.banner?`<img src="${d.banner}">`:''}<div class="ov">Изменить баннер</div></div>
     <div class="prof-name">${esc(d.name)}</div><div class="prof-un">@${esc(d.username)}</div>
     <div class="prof-bio">${esc(d.bio||'Нет описания')}</div>
     ${d.birthDate?`<div class="prof-bio" style="margin-top:4px">Дата рождения: ${esc(formatBirthDate(d.birthDate))}</div>`:''}
