@@ -3,6 +3,10 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="theme-color" content="#1b1230">
+<meta name="color-scheme" content="dark light">
 <title>NexusChat</title>
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>💬</text></svg>">
 <script src="https://www.gstatic.com/firebasejs/10.7.0/firebase-app-compat.js"></script>
@@ -287,6 +291,10 @@ textarea{resize:vertical;min-height:50px}
 
 /* Profile panel — redesigned */
 .prof-hero{position:relative;padding:24px 20px 20px;text-align:center;background:linear-gradient(180deg,rgba(124,92,252,.15) 0%,transparent 100%);border-radius:0 0 20px 20px;margin:-14px -14px 14px}
+.prof-banner{height:140px;border-radius:14px;overflow:hidden;background:var(--bg3);margin:-8px -8px 14px;cursor:pointer;position:relative}
+.prof-banner img{width:100%;height:100%;object-fit:cover}
+.prof-banner .ov{position:absolute;inset:0;background:rgba(0,0,0,.25);display:flex;align-items:center;justify-content:center;font-size:13px;opacity:0;transition:var(--tr)}
+.prof-banner:hover .ov{opacity:1}
 .prof-av{width:110px;height:110px;border-radius:50%;margin:0 auto;position:relative;cursor:pointer;transition:var(--tr)}
 .prof-av:hover{transform:scale(1.04)}
 .prof-av-inner{width:110px;height:110px;border-radius:50%;overflow:hidden;display:flex;align-items:center;justify-content:center;font-size:44px;color:#fff;background:var(--bg3);border:3px solid var(--ac)}
@@ -324,6 +332,8 @@ textarea{resize:vertical;min-height:50px}
 .uprf-hero{padding:30px 24px 20px;text-align:center;background:linear-gradient(180deg,rgba(124,92,252,.2) 0%,transparent 100%)}
 .uprf .uav2{width:110px;height:110px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:44px;color:#fff;margin:0 auto;overflow:hidden;border:3px solid var(--ac)}
 .uprf .uav2 img{width:100%;height:100%;object-fit:cover}
+.uprf .ubn{height:140px;border-radius:14px;overflow:hidden;margin:-8px -8px 12px;background:var(--bg3)}
+.uprf .ubn img{width:100%;height:100%;object-fit:cover}
 .uprf .un2{font-size:22px;font-weight:700;margin-top:10px}.uprf .uu2{font-size:14px;color:var(--ac);margin-top:3px}
 .uprf .ub2{font-size:13px;color:var(--tx2);margin-top:10px;line-height:1.5;padding:0 20px}
 .uprf .ust{font-size:12px;margin-top:8px;padding:3px 12px;border-radius:12px;display:inline-block}
@@ -591,6 +601,7 @@ textarea{resize:vertical;min-height:50px}
 <div class="toast" id="toast"></div>
 <input type="file" id="fileInp" style="display:none" accept="image/*,video/*,.gif,.pdf,.doc,.docx,.zip,.txt">
 <input type="file" id="avInp" style="display:none" accept="image/*">
+<input type="file" id="bannerInp" style="display:none" accept="image/*">
 <input type="file" id="grpAvInp" style="display:none" accept="image/*">
 <input type="file" id="chnAvInp" style="display:none" accept="image/*">
 <input type="file" id="storyPhotoInp" style="display:none" accept="image/*">
@@ -639,6 +650,7 @@ const showLegal=t=>openM(t+'Modal');
 function scrollBot(smooth=false){const c=document.getElementById('msgc');if(smooth)c.scrollTo({top:c.scrollHeight,behavior:'smooth'});else c.scrollTop=c.scrollHeight}
 function stopActiveVoice(){if(!activeVoice.audio)return;activeVoice.audio.pause();activeVoice.audio.currentTime=0;if(activeVoice.btn)activeVoice.btn.textContent='▶';if(activeVoice.wave)activeVoice.wave.querySelector('.voice-progress').style.width='0%';if(activeVoice.dur)activeVoice.dur.textContent=activeVoice.dur.dataset.base||'0:00';activeVoice={audio:null,btn:null,wave:null,dur:null}}
 function compress64(f,mx,q){return new Promise((r,j)=>{const i=new Image();i.onload=()=>{const c=document.createElement('canvas');let w=i.width,h=i.height;if(w>mx||h>mx){if(w>h){h=h/w*mx;w=mx}else{w=w/h*mx;h=mx}}c.width=w;c.height=h;c.getContext('2d').drawImage(i,0,0,w,h);r(c.toDataURL('image/jpeg',q))};i.onerror=j;i.src=URL.createObjectURL(f)})}
+function compressCover64(f,w,h,q=0.8){return new Promise((r,j)=>{const i=new Image();i.onload=()=>{const c=document.createElement('canvas');c.width=w;c.height=h;const ctx=c.getContext('2d');const sc=Math.max(w/i.width,h/i.height);const nw=i.width*sc,nh=i.height*sc;const x=(w-nw)/2,y=(h-nh)/2;ctx.drawImage(i,x,y,nw,nh);r(c.toDataURL('image/jpeg',q))};i.onerror=j;i.src=URL.createObjectURL(f)})}
 function file64(f){return new Promise((r,j)=>{const rd=new FileReader();rd.onload=()=>r(rd.result);rd.onerror=j;rd.readAsDataURL(f)})}
 function genId(n=8){const c='abcdefghijklmnopqrstuvwxyz0123456789';let r='';for(let i=0;i<n;i++)r+=c[Math.floor(Math.random()*c.length)];return r}
 function setVis(el,v){createVis=v;el.parentElement.querySelectorAll('.vis-opt').forEach(e=>e.classList.remove('act'));el.classList.add('act')}
@@ -720,6 +732,7 @@ function renderProfilePanel(){
   const ints=d.integrations||{};
   let intHtml='';if(Object.values(ints).some(v=>v))intHtml='<div class="prof-integrations">'+Object.entries(ints).filter(([k,v])=>v).map(([k,v])=>`<div class="prof-int">${{github:'🐙',twitter:'🐦',telegram:'✈️',discord:'🎮',website:'🌐'}[k]||'🔗'} ${esc(v)}</div>`).join('')+'</div>';
   document.getElementById('profBody').innerHTML=`
+  <div class="prof-banner" onclick="document.getElementById('bannerInp').click()">${d.banner?`<img src="${d.banner}">`:''}<div class="ov">Изменить баннер</div></div>
   <div class="prof-hero">
     <div class="prof-av" onclick="triggerCrop('profile')"><div class="prof-av-inner">${d.avatar?`<img src="${d.avatar}">`:(d.name||'?')[0].toUpperCase()}</div><div class="aov">📷</div>
       <div class="prof-emoji-status" onclick="event.stopPropagation();openM('emojiStatusModal')">${d.emojiStatus||'😀'}</div>
