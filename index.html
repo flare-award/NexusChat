@@ -603,6 +603,7 @@ const TS=firebase.firestore.FieldValue.serverTimestamp,INC=firebase.firestore.Fi
 let CU=null,curChat=null,curCD=null,myData=null,chats={},users={},unsubs={},onlineCache={};
 let replyTo=null,ctxMsg=null,editMsg=null,selGU=[],pendFile=null,cropTarget=null,grpAvB64='',chnAvB64='',createVis='open',attachedPhoto=null;
 let mediaRec=null,recChunks=[],recTimer=null,recSec=0,storyVideoB64='',storyVideoUrl='';
+let storyPhotoB64=''; // legacy alias for old branches/conflict-free merges
 let activeVoice={audio:null,btn:null,wave:null,dur:null};
 let isInitialChatOpen=true;
 let presenceCleanup=[];
