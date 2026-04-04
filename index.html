@@ -143,6 +143,7 @@ textarea{resize:vertical;min-height:50px}
 
 .ch-hdr{height:var(--hh);padding:0 12px;display:flex;align-items:center;gap:10px;background:rgba(26,18,48,.85);backdrop-filter:blur(16px);border-bottom:1px solid var(--brd);flex-shrink:0;z-index:5}
 .ch-hdr .bkb{display:none}
+.ch-av,#chAv{width:42px;height:42px;border-radius:50%;overflow:hidden;flex-shrink:0;display:flex;align-items:center;justify-content:center}
 .ch-info{flex:1;min-width:0;cursor:pointer}.ch-info h3{font-size:14px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .ch-info .sts{font-size:12px;color:var(--tx2)}.ch-info .sts.on{color:var(--grn)}
 
@@ -603,7 +604,7 @@ const TS=firebase.firestore.FieldValue.serverTimestamp,INC=firebase.firestore.Fi
 
 let CU=null,curChat=null,curCD=null,myData=null,chats={},users={},unsubs={},onlineCache={};
 let replyTo=null,ctxMsg=null,editMsg=null,selGU=[],pendFile=null,cropTarget=null,grpAvB64='',chnAvB64='',createVis='open',attachedPhoto=null;
-let mediaRec=null,recChunks=[],recTimer=null,recSec=0,storyPhotoB64='';
+let mediaRec=null,recChunks=[],recTimer=null,recSec=0,recStartTs=0,storyPhotoB64='';
 let activeVoice={audio:null,btn:null,wave:null,dur:null};
 let isInitialChatOpen=true;
 let presenceCleanup=[];
@@ -624,6 +625,7 @@ const fmtSize=b=>{if(!b)return'0';const k=1024,s=['Б','КБ','МБ'];const i=Ma
 const fmtText=t=>esc(t).replace(/(https?:\/\/[^\s]+)/g,'<a href="$1" target="_blank">$1</a>');
 function pluralRu(n,one,few,many){const m=n%10,h=n%100;if(m===1&&h!==11)return one;if(m>=2&&m<=4&&(h<12||h>14))return few;return many}
 function formatLastSeen(ts){if(!ts)return'был(а) недавно';const d=ts.toDate?ts.toDate():new Date(ts);const sec=Math.max(60,Math.floor((Date.now()-d.getTime())/1000));const m=Math.floor(sec/60);if(m<60)return`был(а) ${m} ${pluralRu(m,'минуту','минуты','минут')} назад`;const h=Math.floor(m/60);if(h<24)return`был(а) ${h} ${pluralRu(h,'час','часа','часов')} назад`;const days=Math.floor(h/24);if(days<7)return`был(а) ${days} ${pluralRu(days,'день','дня','дней')} назад`;if(days<14)return'был(а) неделю назад';if(days<21)return'был(а) 2 недели назад';if(days<28)return'был(а) 3 недели назад';return'был(а) месяц назад'}
+function formatBirthDate(v){if(!v)return'';const d=new Date(v);if(Number.isNaN(d.getTime()))return'';return d.toLocaleDateString('ru-RU',{day:'numeric',month:'long',year:'numeric'})}
 const validUn=u=>/^[a-zA-Z0-9_-]{3,20}$/.test(u);
 const debounce=(fn,d)=>{let t;return function(...a){clearTimeout(t);t=setTimeout(()=>fn.apply(this,a),d)}};
 const toast=m=>{const t=document.getElementById('toast');t.textContent=m;t.classList.add('show');clearTimeout(t._t);t._t=setTimeout(()=>t.classList.remove('show'),3000)};
@@ -707,8 +709,8 @@ function clampCropPosition(){const a=document.getElementById('cropArea'),i=docum
 function setupDrag(){const a=document.getElementById('cropArea'),i=document.getElementById('cropImg');let d=false,sx,sy,sl,st;i.onmousedown=e=>{d=true;sx=e.clientX;sy=e.clientY;sl=parseInt(i.style.left);st=parseInt(i.style.top);e.preventDefault()};document.onmousemove=e=>{if(!d)return;i.style.left=sl+e.clientX-sx+'px';i.style.top=st+e.clientY-sy+'px';clampCropPosition()};document.onmouseup=()=>d=false;i.ontouchstart=e=>{const t=e.touches[0];d=true;sx=t.clientX;sy=t.clientY;sl=parseInt(i.style.left);st=parseInt(i.style.top)};a.ontouchmove=e=>{if(!d)return;const t=e.touches[0];i.style.left=sl+t.clientX-sx+'px';i.style.top=st+t.clientY-sy+'px';clampCropPosition();e.preventDefault()};a.ontouchend=()=>d=false}
 async function applyCrop(){const a=document.getElementById('cropArea'),i=document.getElementById('cropImg');const cv=document.createElement('canvas');cv.width=200;cv.height=200;const ctx=cv.getContext('2d');const ar=a.getBoundingClientRect(),ir=i.getBoundingClientRect();ctx.drawImage(i,(ar.left-ir.left)/ir.width*i.naturalWidth,(ar.top-ir.top)/ir.height*i.naturalHeight,ar.width/ir.width*i.naturalWidth,ar.height/ir.height*i.naturalHeight,0,0,200,200);const b=cv.toDataURL('image/jpeg',0.7);clsM('cropModal');
   if(cropTarget==='profile'){await db.collection('users').doc(CU.uid).update({avatar:b});myData.avatar=b;toast('Аватар обновлён ✓')}
-  else if(cropTarget==='group'){grpAvB64=b;document.getElementById('grpAvP').innerHTML=`<img src="${b}">`}
-  else if(cropTarget==='channel'){chnAvB64=b;document.getElementById('chnAvP').innerHTML=`<img src="${b}">`}
+  else if(cropTarget==='group'){if(curCD?.type==='group'&&curChat){await db.collection('chats').doc(curChat).update({avatar:b});toast('Иконка группы обновлена ✓')}else{grpAvB64=b;document.getElementById('grpAvP').innerHTML=`<img src="${b}">`}}
+  else if(cropTarget==='channel'){if(curCD?.type==='channel'&&curChat){await db.collection('chats').doc(curChat).update({avatar:b});toast('Иконка канала обновлена ✓')}else{chnAvB64=b;document.getElementById('chnAvP').innerHTML=`<img src="${b}">`}}
 }
 
 // Profile panel
@@ -724,6 +726,7 @@ function renderProfilePanel(){
     </div>
     <div class="prof-name">${esc(d.name)}</div><div class="prof-un">@${esc(d.username)}</div>
     <div class="prof-bio">${esc(d.bio||'Нет описания')}</div>
+    ${d.birthDate?`<div class="prof-bio" style="margin-top:4px">Дата рождения: ${esc(formatBirthDate(d.birthDate))}</div>`:''}
     ${musicHtml}${intHtml}
   </div>
   <div class="pfld"><label>Имя</label><input type="text" id="profNmI" value="${esc(d.name||'')}"></div>
@@ -914,10 +917,12 @@ ca.addEventListener('dragleave',e=>{if(!ca.contains(e.relatedTarget))document.ge
 ca.addEventListener('drop',async e=>{e.preventDefault();document.getElementById('dragOv').classList.remove('act');const f=e.dataTransfer.files[0];if(!f||!curChat)return;if(f.type.startsWith('image/')){attachPhoto(await compress64(f,800,0.6));toast('Фото прикреплено')}});
 
 // Voice recording
-async function startRec(){if(!navigator.mediaDevices){toast('Микрофон недоступен');return}try{const stream=await navigator.mediaDevices.getUserMedia({audio:true});mediaRec=new MediaRecorder(stream);recChunks=[];recSec=0;mediaRec.ondataavailable=e=>recChunks.push(e.data);mediaRec.onstop=async()=>{stream.getTracks().forEach(t=>t.stop());if(!recChunks.length)return;const blob=new Blob(recChunks,{type:'audio/webm'});const reader=new FileReader();reader.onload=async()=>{const b64=reader.result;if(!curChat)return;const dur=Math.floor(recSec/60)+':'+String(recSec%60).padStart(2,'0');await db.collection('chats').doc(curChat).collection('messages').add({senderId:CU.uid,senderName:myData?.name||'User',type:'voice',voiceData:b64,voiceDur:dur,text:'',timestamp:TS(),read:false,edited:false,reactions:{}});await db.collection('chats').doc(curChat).update({lastMessage:'🎤 Голосовое',lastMessageTime:TS()})};reader.readAsDataURL(blob)};
-    mediaRec.start();document.getElementById('voiceRec').classList.add('act');document.getElementById('inputRow').querySelector('.iwrap').style.display='none';
+async function startRec(){if(mediaRec&&mediaRec.state==='recording')return;if(!navigator.mediaDevices){toast('Микрофон недоступен');return}try{const stream=await navigator.mediaDevices.getUserMedia({audio:true});mediaRec=new MediaRecorder(stream);recChunks=[];recSec=0;recStartTs=Date.now();mediaRec.ondataavailable=e=>recChunks.push(e.data);mediaRec.onstop=async()=>{stream.getTracks().forEach(t=>t.stop());if(!recChunks.length)return;const blob=new Blob(recChunks,{type:'audio/webm'});const reader=new FileReader();reader.onload=async()=>{const b64=reader.result;if(!curChat)return;const realSec=Math.max(1,Math.round((Date.now()-recStartTs)/1000));const dur=Math.floor(realSec/60)+':'+String(realSec%60).padStart(2,'0');await db.collection('chats').doc(curChat).collection('messages').add({senderId:CU.uid,senderName:myData?.name||'User',type:'voice',voiceData:b64,voiceDur:dur,text:'',timestamp:TS(),read:false,edited:false,reactions:{}});await db.collection('chats').doc(curChat).update({lastMessage:'Голосовое',lastMessageTime:TS()})};reader.readAsDataURL(blob)};
+    mediaRec.start(250);document.getElementById('voiceRec').classList.add('act');document.getElementById('inputRow').querySelector('.iwrap').style.display='none';
     recTimer=setInterval(()=>{recSec++;document.getElementById('recTime').textContent=Math.floor(recSec/60)+':'+String(recSec%60).padStart(2,'0')},1000);
   }catch(e){toast('Ошибка микрофона')}}
+function stopRec(){if(mediaRec&&mediaRec.state==='recording'){mediaRec.stop();clearInterval(recTimer);recStartTs=0;document.getElementById('voiceRec').classList.remove('act');document.getElementById('inputRow').querySelector('.iwrap').style.display=''}}
+function cancelRec(){if(mediaRec&&mediaRec.state==='recording'){mediaRec.stop();recChunks=[];clearInterval(recTimer);recStartTs=0;document.getElementById('voiceRec').classList.remove('act');document.getElementById('inputRow').querySelector('.iwrap').style.display=''}}
 function stopRec(){if(mediaRec&&mediaRec.state==='recording'){mediaRec.stop();clearInterval(recTimer);document.getElementById('voiceRec').classList.remove('act');document.getElementById('inputRow').querySelector('.iwrap').style.display=''}}
 function cancelRec(){if(mediaRec&&mediaRec.state==='recording'){mediaRec.stop();recChunks=[];clearInterval(recTimer);document.getElementById('voiceRec').classList.remove('act');document.getElementById('inputRow').querySelector('.iwrap').style.display=''}}
 function playVoice(btn,data){
@@ -968,13 +973,14 @@ async function createChn(){const nm=document.getElementById('chnNm').value.trim(
 
 // User profile
 async function showUserProf(uid){const u=await getUser(uid);if(!u)return;const bl=myData?.blocked?.includes(uid);const musicHtml=u.music?`<div class="umusic">🎵 ${esc(u.music.title)} — ${esc(u.music.artist)}</div>`:'';const ints=u.integrations||{};let intHtml='';if(Object.values(ints).some(v=>v))intHtml='<div class="uints">'+Object.entries(ints).filter(([,v])=>v).map(([k,v])=>`<div class="uint">${{github:'🐙',twitter:'🐦',telegram:'✈️',discord:'🎮',website:'🌐'}[k]||'🔗'} ${esc(v)}</div>`).join('')+'</div>';
-  document.getElementById('userProfC').innerHTML=`<div class="uprf-hero"><div class="uav2" style="background:${getCol(uid)}">${u.avatar?`<img src="${u.avatar}">`:(u.name||'?')[0].toUpperCase()}</div><div class="un2">${esc(u.name)} ${u.emojiStatus||''}</div><div class="uu2">@${esc(u.username||'')}</div><div class="ust ${u.status==='online'?'on':'off'}">${u.status==='online'?'🟢 онлайн':'⚫ оффлайн'}</div>${musicHtml}${intHtml}<div class="ub2">${esc(u.bio||'Нет описания')}</div></div><div class="ubts"><button class="btn btn1" onclick="clsM('userProfModal');startDM('${uid}')">✉️ Написать</button>${uid!==CU.uid?`<button class="btn ${bl?'btnD':'btn2'}" onclick="toggleBlock('${uid}')">${bl?'Разблокировать':'🚫 Блокировать'}</button>`:''}</div>`;openM('userProfModal')}
+  document.getElementById('userProfC').innerHTML=`<div class="uprf-hero"><div class="uav2" style="background:${getCol(uid)}">${u.avatar?`<img src="${u.avatar}">`:(u.name||'?')[0].toUpperCase()}</div><div class="un2">${esc(u.name)} ${u.emojiStatus||''}</div><div class="uu2">@${esc(u.username||'')}</div><div class="ust ${u.status==='online'?'on':'off'}">${u.status==='online'?'онлайн':'оффлайн'}</div>${u.birthDate?`<div class="ub2" style="margin-top:6px">Дата рождения: ${esc(formatBirthDate(u.birthDate))}</div>`:''}${musicHtml}${intHtml}<div class="ub2">${esc(u.bio||'Нет описания')}</div></div><div class="ubts"><button class="btn btn1" onclick="clsM('userProfModal');startDM('${uid}')">Написать</button>${uid!==CU.uid?`<button class="btn ${bl?'btnD':'btn2'}" onclick="toggleBlock('${uid}')">${bl?'Разблокировать':'Блокировать'}</button>`:''}</div>`;openM('userProfModal')}
 async function toggleBlock(uid){const bl=myData.blocked?.includes(uid);await db.collection('users').doc(CU.uid).update({blocked:bl?ARM(uid):ARU(uid)});myData.blocked=bl?(myData.blocked||[]).filter(b=>b!==uid):[...(myData.blocked||[]),uid];clsM('userProfModal');toast(bl?'Разблокирован':'Заблокирован')}
 function showChatProfile(){if(!curCD)return;if(curCD.type==='favorites'){openChatInfo();return}if(curCD.type==='direct'){const o=curCD.members.find(m=>m!==CU.uid);showUserProf(o)}else openChatInfo()}
 
 // Chat info
 async function openChatInfo(){clsDD('chMenu');if(!curCD)return;const body=document.getElementById('chatInfoBody');const isAdm=curCD.admins?.includes(CU.uid)||curCD.owner===CU.uid;document.getElementById('ciTitle').textContent=curCD.type==='group'?'Группа':'Канал';let on=0;for(const uid of curCD.members){const u=await getUser(uid);if(u?.status==='online')on++}
   let h=`<div style="text-align:center"><div class="gi-avatar" style="background:${getCol(curChat)}">${curCD.avatar?`<img src="${curCD.avatar}">`:(curCD.name||'?')[0].toUpperCase()}</div><div style="font-size:18px;font-weight:600">${esc(curCD.name)}</div><div style="font-size:13px;color:var(--ac);margin-top:2px">@${esc(curCD.username||'')}</div><div style="font-size:13px;color:var(--tx2);margin-top:6px">${esc(curCD.description||'')}</div><div class="gi-stats"><div class="gi-stat"><div class="gn">${curCD.members.length}</div><div class="gl">${curCD.type==='channel'?'подпис.':'уч.'}</div></div>${curCD.type!=='channel'&&on>=2?`<div class="gi-stat"><div class="gn">${on}</div><div class="gl">онлайн</div></div>`:''}</div><span class="gi-type ${curCD.visibility||'open'}">${curCD.visibility==='closed'?'🔒 Закрытая':'🌐 Открытая'}</span></div>`;
+  if(isAdm)h+=`<div style="margin-top:14px"><div class="stsec"><h4>Настройки</h4><div class="stit" onclick="editChatName()"><span class="sti">✏</span><div class="stc"><div class="stl">Название</div></div></div><div class="stit" onclick="editChatDesc()"><span class="sti">📝</span><div class="stc"><div class="stl">Описание</div></div></div><div class="stit" onclick="changeChatAvatar()"><span class="sti">🖼</span><div class="stc"><div class="stl">Иконка</div></div></div></div></div>`;
   if(isAdm)h+=`<div style="margin-top:14px"><div class="stsec"><h4>⚙️ Настройки</h4><div class="stit" onclick="editChatName()"><span class="sti">✏️</span><div class="stc"><div class="stl">Название</div></div></div><div class="stit" onclick="editChatDesc()"><span class="sti">📝</span><div class="stc"><div class="stl">Описание</div></div></div></div></div>`;
   const canSee=curCD.type==='group'||isAdm;
   if(canSee){h+=`<div class="gi-members"><h4>Участники</h4>`;for(const uid of curCD.members){const u=await getUser(uid);if(!u)continue;const role=uid===curCD.owner?'владелец':curCD.admins?.includes(uid)?'админ':'';h+=`<div class="gi-member" onclick="showUserProf('${uid}')"><div class="uav" style="background:${getCol(uid)};width:34px;height:34px;font-size:13px">${u.avatar?`<img src="${u.avatar}">`:(u.name||'?')[0].toUpperCase()}</div><div style="flex:1"><div style="font-size:13px;font-weight:500">${esc(u.name)}</div><div style="font-size:11px;color:var(--tx2)">@${esc(u.username||'')} ${role?'· '+role:''}</div></div></div>`}h+=`</div>`}
@@ -983,14 +989,15 @@ async function openChatInfo(){clsDD('chMenu');if(!curCD)return;const body=docume
 function closeChatInfo(){document.getElementById('chatInfoPnl').classList.remove('act')}
 async function editChatName(){if(curCD?.type==='favorites'){toast('Недоступно для избранного');return}const n=prompt('Название:',curCD.name);if(!n)return;await db.collection('chats').doc(curChat).update({name:n});toast('✓');openChatInfo()}
 async function editChatDesc(){if(curCD?.type==='favorites'){toast('Недоступно для избранного');return}const d=prompt('Описание:',curCD.description||'');if(d===null)return;await db.collection('chats').doc(curChat).update({description:d});toast('✓');openChatInfo()}
+function changeChatAvatar(){if(!curCD||!['group','channel'].includes(curCD.type)){toast('Только для групп и каналов');return}triggerCrop(curCD.type==='group'?'group':'channel')}
 async function addMember(){const un=document.getElementById('addMbrI')?.value.trim().toLowerCase();if(!un)return;const s=await db.collection('users').where('username','==',un).get();if(s.empty){toast('Не найден');return}let uid;s.forEach(d=>uid=d.id);if(curCD.members.includes(uid)){toast('Уже участник');return}await db.collection('chats').doc(curChat).update({members:ARU(uid),[`unread.${uid}`]:0});toast('Добавлен ✓');openChatInfo()}
 
 // Archive
-async function toggleArchive(){clsDD('chMenu');if(!curChat)return;const isArch=curCD.archived;await db.collection('chats').doc(curChat).update({archived:!isArch});toast(isArch?'Разархивировано':'Архивировано');closeChat()}
+async function toggleArchive(){clsDD('chMenu');if(!curChat)return;if(curCD?.type==='favorites'){toast('Избранное нельзя архивировать');return}const isArch=curCD.archived;await db.collection('chats').doc(curChat).update({archived:!isArch});toast(isArch?'Разархивировано':'Архивировано');closeChat()}
 
 // Chat actions
-async function clearChat(){clsDD('chMenu');if(!curChat||!confirm('Очистить?'))return;const m=await db.collection('chats').doc(curChat).collection('messages').get();const b=db.batch();m.forEach(d=>b.delete(d.ref));await b.commit();await db.collection('chats').doc(curChat).update({lastMessage:''});toast('Очищено')}
-async function deleteChat(){clsDD('chMenu');if(!curChat||!confirm('Удалить?'))return;try{const m=await db.collection('chats').doc(curChat).collection('messages').get();const b=db.batch();m.forEach(d=>b.delete(d.ref));await b.commit()}catch(e){}await db.collection('chats').doc(curChat).delete();curChat=null;document.getElementById('activeChat').style.display='none';document.getElementById('emptyst').style.display='flex';closeChat();toast('Удалён')}
+async function clearChat(){clsDD('chMenu');if(!curChat||!confirm('Очистить?'))return;if(curCD?.type==='favorites'){toast('Избранное нельзя очищать здесь');return}const m=await db.collection('chats').doc(curChat).collection('messages').get();const b=db.batch();m.forEach(d=>b.delete(d.ref));await b.commit();await db.collection('chats').doc(curChat).update({lastMessage:''});toast('Очищено')}
+async function deleteChat(){clsDD('chMenu');if(!curChat||!confirm('Удалить?'))return;if(curCD?.type==='favorites'){toast('Избранное нельзя удалить');return}try{const m=await db.collection('chats').doc(curChat).collection('messages').get();const b=db.batch();m.forEach(d=>b.delete(d.ref));await b.commit()}catch(e){}await db.collection('chats').doc(curChat).delete();curChat=null;document.getElementById('activeChat').style.display='none';document.getElementById('emptyst').style.display='flex';closeChat();toast('Удалён')}
 
 // Events
 document.getElementById('menuTgl').onclick=()=>document.getElementById('mainMenu').classList.toggle('act');
