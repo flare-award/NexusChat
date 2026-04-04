@@ -592,6 +592,7 @@ textarea{resize:vertical;min-height:50px}
 <input type="file" id="avInp" style="display:none" accept="image/*">
 <input type="file" id="grpAvInp" style="display:none" accept="image/*">
 <input type="file" id="chnAvInp" style="display:none" accept="image/*">
+<input type="file" id="storyPhotoInp" style="display:none" accept="image/*">
 <input type="file" id="storyVideoInp" style="display:none" accept="video/*">
 
 <script>
@@ -602,8 +603,8 @@ const TS=firebase.firestore.FieldValue.serverTimestamp,INC=firebase.firestore.Fi
 
 let CU=null,curChat=null,curCD=null,myData=null,chats={},users={},unsubs={},onlineCache={};
 let replyTo=null,ctxMsg=null,editMsg=null,selGU=[],pendFile=null,cropTarget=null,grpAvB64='',chnAvB64='',createVis='open',attachedPhoto=null;
-let mediaRec=null,recChunks=[],recTimer=null,recSec=0,storyVideoB64='',storyVideoUrl='';
-let storyPhotoB64=''; // legacy alias for old branches/conflict-free merges
+let mediaRec=null,recChunks=[],recTimer=null,recSec=0,storyPhotoB64='';
+let storyVideoB64='',storyVideoUrl=''; // video stories
 let activeVoice={audio:null,btn:null,wave:null,dur:null};
 let isInitialChatOpen=true;
 let presenceCleanup=[];
@@ -790,6 +791,7 @@ function loadStories(){db.collection('stories').where('createdAt','>',new Date(D
     for(const[uid,data]of Object.entries(storyUsers)){const u=await getUser(uid);if(!u)continue;bar.innerHTML+=`<div class="story-item" onclick="viewStory('${uid}')"><div class="story-av"><div class="story-av-inner">${u.avatar?`<img src="${u.avatar}">`:(u.name||'?')[0].toUpperCase()}</div></div><div class="story-name">${esc(u.name).split(' ')[0]}</div></div>`}})}
 
 document.getElementById('storyVideoInp').onchange=async e=>{const f=e.target.files[0];if(!f)return;if(!f.type.startsWith('video/')){toast('Нужно видео');e.target.value='';return}if(f.size>9000000){toast('Видео сторис макс 9МБ');e.target.value='';return}storyVideoB64=await file64(f);storyVideoUrl=URL.createObjectURL(f);const pv=document.getElementById('storyVideoPreview');pv.src=storyVideoUrl;pv.style.display='block';e.target.value=''};
+document.getElementById('storyPhotoInp').onchange=e=>{if(e.target.files[0])toast('Сторис теперь поддерживают только видео');e.target.value=''};
 async function postStory(){const txt=document.getElementById('storyText').value.trim();if(!storyVideoB64){toast('Добавьте видео');return}await db.collection('stories').add({userId:CU.uid,userName:myData.name,text:txt,video:storyVideoB64,likes:[],dislikes:[],createdAt:TS()});clsM('storyModal');document.getElementById('storyText').value='';storyVideoB64='';if(storyVideoUrl)URL.revokeObjectURL(storyVideoUrl);storyVideoUrl='';document.getElementById('storyVideoPreview').style.display='none';toast('Сторис опубликован ✓')}
 async function voteStory(storyId,type){if(!CU)return;const ref=db.collection('stories').doc(storyId);await db.runTransaction(async tx=>{const d=await tx.get(ref);if(!d.exists)return;const s=d.data();let likes=[...(s.likes||[])],dislikes=[...(s.dislikes||[])];const uid=CU.uid;if(type==='like'){likes=likes.includes(uid)?likes.filter(x=>x!==uid):[...likes,uid];dislikes=dislikes.filter(x=>x!==uid)}else{dislikes=dislikes.includes(uid)?dislikes.filter(x=>x!==uid):[...dislikes,uid];likes=likes.filter(x=>x!==uid)}tx.update(ref,{likes,dislikes})});viewStoryById(storyId)}
 async function viewStory(uid){const snap=await db.collection('stories').where('userId','==',uid).where('createdAt','>',new Date(Date.now()-86400000)).orderBy('createdAt','desc').limit(1).get();if(snap.empty){toast('Нет сторис');return}const doc=snap.docs[0];await viewStoryById(doc.id,doc.data())}
