@@ -605,6 +605,7 @@ let replyTo=null,ctxMsg=null,editMsg=null,selGU=[],pendFile=null,cropTarget=null
 let mediaRec=null,recChunks=[],recTimer=null,recSec=0,storyPhotoB64='';
 let activeVoice={audio:null,btn:null,wave:null,dur:null};
 let isInitialChatOpen=true;
+let presenceCleanup=[];
 
 let S={theme:'dark',fontSize:14,enterSend:true,sound:true,accentColor:'#7c5cfc'};
 try{Object.assign(S,JSON.parse(localStorage.getItem('ncs4')||'{}'))}catch(e){}
@@ -633,6 +634,7 @@ const clsDD=id=>document.getElementById(id)?.classList.remove('act');
 const clsCtx=()=>document.getElementById('ctxMenu').classList.remove('act');
 const showLegal=t=>openM(t+'Modal');
 function scrollBot(smooth=false){const c=document.getElementById('msgc');if(smooth)c.scrollTo({top:c.scrollHeight,behavior:'smooth'});else c.scrollTop=c.scrollHeight}
+function stopActiveVoice(){if(!activeVoice.audio)return;activeVoice.audio.pause();activeVoice.audio.currentTime=0;if(activeVoice.btn)activeVoice.btn.textContent='▶';if(activeVoice.wave)activeVoice.wave.querySelector('.voice-progress').style.width='0%';if(activeVoice.dur)activeVoice.dur.textContent=activeVoice.dur.dataset.base||'0:00';activeVoice={audio:null,btn:null,wave:null,dur:null}}
 function compress64(f,mx,q){return new Promise((r,j)=>{const i=new Image();i.onload=()=>{const c=document.createElement('canvas');let w=i.width,h=i.height;if(w>mx||h>mx){if(w>h){h=h/w*mx;w=mx}else{w=w/h*mx;h=mx}}c.width=w;c.height=h;c.getContext('2d').drawImage(i,0,0,w,h);r(c.toDataURL('image/jpeg',q))};i.onerror=j;i.src=URL.createObjectURL(f)})}
 function file64(f){return new Promise((r,j)=>{const rd=new FileReader();rd.onload=()=>r(rd.result);rd.onerror=j;rd.readAsDataURL(f)})}
 function genId(n=8){const c='abcdefghijklmnopqrstuvwxyz0123456789';let r='';for(let i=0;i<n;i++)r+=c[Math.floor(Math.random()*c.length)];return r}
@@ -674,17 +676,18 @@ auth.onAuthStateChanged(async u=>{
 
 // Presence - fixed
 function setupPresence(){
+  presenceCleanup.forEach(fn=>fn());presenceCleanup=[];
   const ref=db.collection('users').doc(CU.uid);
   let idleTimer=null,isIdle=false;
   const goOnline=()=>ref.update({status:'online',lastSeen:TS()}).catch(()=>{});
   const goOffline=()=>ref.update({status:'offline',lastSeen:TS()}).catch(()=>{});
   const resetIdle=()=>{clearTimeout(idleTimer);idleTimer=setTimeout(()=>{isIdle=true;goOffline()},7*60*1000)};
   const markActive=()=>{if(document.hidden)return;if(isIdle){isIdle=false;goOnline()}resetIdle()};
-  ['mousemove','keydown','click','touchstart','scroll'].forEach(ev=>document.addEventListener(ev,markActive,{passive:true}));
-  setInterval(()=>{if(!document.hidden&&!isIdle)goOnline()},25000);
-  document.addEventListener('visibilitychange',()=>{document.hidden?goOffline():markActive()});
-  window.addEventListener('beforeunload',goOffline);
-  window.addEventListener('pagehide',goOffline);
+  ['mousemove','keydown','click','touchstart','scroll'].forEach(ev=>{document.addEventListener(ev,markActive,{passive:true});presenceCleanup.push(()=>document.removeEventListener(ev,markActive,{passive:true}))});
+  const pingTimer=setInterval(()=>{if(!document.hidden&&!isIdle)goOnline()},25000);presenceCleanup.push(()=>clearInterval(pingTimer));
+  const onVis=()=>{document.hidden?goOffline():markActive()};document.addEventListener('visibilitychange',onVis);presenceCleanup.push(()=>document.removeEventListener('visibilitychange',onVis));
+  window.addEventListener('beforeunload',goOffline);presenceCleanup.push(()=>window.removeEventListener('beforeunload',goOffline));
+  window.addEventListener('pagehide',goOffline);presenceCleanup.push(()=>window.removeEventListener('pagehide',goOffline));
   markActive();
 }
 
@@ -739,7 +742,7 @@ function renderProfilePanel(){
   renderEmojiStatusGrid();
 }
 
-async function saveProf(){const nm=document.getElementById('profNmI').value.trim(),un=document.getElementById('profUnI').value.trim().toLowerCase(),bio=document.getElementById('profBioI').value.trim(),birthDate=document.getElementById('profBirthI').value;if(!nm){toast('Имя');return}if(!validUn(un)){toast('Юзернейм');return}if(un!==myData.username){const ex=await db.collection('users').where('username','==',un).get();if(!ex.empty){toast('Занят');return}}await db.collection('users').doc(CU.uid).update({name:nm,username:un,bio,birthDate:birthDate||''});await CU.updateProfile({displayName:nm});toast('Сохранено ✓');renderProfilePanel()}
+async function saveProf(){const nm=document.getElementById('profNmI').value.trim(),un=document.getElementById('profUnI').value.trim().toLowerCase(),bio=document.getElementById('profBioI').value.trim(),birthDate=document.getElementById('profBirthI').value;if(!nm){toast('Имя');return}if(!validUn(un)){toast('Юзернейм');return}if(birthDate&&new Date(birthDate)>new Date()){toast('Дата рождения не может быть в будущем');return}if(un!==myData.username){const ex=await db.collection('users').where('username','==',un).get();if(!ex.empty){toast('Занят');return}}await db.collection('users').doc(CU.uid).update({name:nm,username:un,bio,birthDate:birthDate||''});await CU.updateProfile({displayName:nm});toast('Сохранено ✓');renderProfilePanel()}
 async function saveMusic(){const t=document.getElementById('musicTitle').value.trim(),a=document.getElementById('musicArtist').value.trim();if(!t){toast('Введите название');return}await db.collection('users').doc(CU.uid).update({music:{title:t,artist:a}});clsM('musicModal');toast('Музыка добавлена ✓');renderProfilePanel()}
 async function clearMusic(){await db.collection('users').doc(CU.uid).update({music:null});clsM('musicModal');toast('Убрано');renderProfilePanel()}
 async function saveIntegrations(){const ig={github:document.getElementById('intGithub').value.trim(),twitter:document.getElementById('intTwitter').value.trim(),telegram:document.getElementById('intTelegram').value.trim(),discord:document.getElementById('intDiscord').value.trim(),website:document.getElementById('intWebsite').value.trim()};await db.collection('users').doc(CU.uid).update({integrations:ig});clsM('intModal');toast('Сохранено ✓');renderProfilePanel()}
@@ -827,7 +830,7 @@ async function openChat(id){curChat=id;curCD=chats[id];isInitialChatOpen=true;do
   if(curCD.unread?.[CU.uid]>0)db.collection('chats').doc(id).update({[`unread.${CU.uid}`]:0}).catch(()=>{});
   loadMsgs(id);
 }
-function closeChat(){document.getElementById('chatarea').classList.remove('act');curChat=null}
+function closeChat(){document.getElementById('chatarea').classList.remove('act');curChat=null;stopActiveVoice()}
 
 // Scroll button
 document.getElementById('msgc').addEventListener('scroll',function(){const sb=document.getElementById('scrollBtn');sb.classList.toggle('show',this.scrollHeight-this.scrollTop-this.clientHeight>200)});
@@ -835,6 +838,7 @@ document.getElementById('msgc').addEventListener('scroll',function(){const sb=do
 // Messages
 function loadMsgs(id){if(unsubs._m)unsubs._m();const w=document.getElementById('msgw');w.innerHTML='<div class="loader"></div>';
   unsubs._m=db.collection('chats').doc(id).collection('messages').orderBy('timestamp','asc').onSnapshot(snap=>{if(curChat!==id)return;
+    stopActiveVoice();
     const msgc=document.getElementById('msgc');
     const prevTop=msgc.scrollTop,prevHeight=msgc.scrollHeight;
     const wasAtBottom=prevHeight-prevTop-msgc.clientHeight<100;
@@ -927,7 +931,7 @@ function playVoice(btn,data){
   a.ontimeupdate=()=>{const p=a.duration?Math.min(100,a.currentTime/a.duration*100):0;wave.querySelector('.voice-progress').style.width=p+'%';const left=Math.max(0,Math.round((a.duration||0)-a.currentTime));dur.textContent=Math.floor(left/60)+':'+String(left%60).padStart(2,'0')};
   a.onended=()=>{btn.textContent='▶';wave.querySelector('.voice-progress').style.width='0%';dur.textContent=dur.dataset.base||'0:00';if(activeVoice.audio===a)activeVoice={audio:null,btn:null,wave:null,dur:null}}
 }
-function seekVoice(e,wave){if(!activeVoice.audio||activeVoice.wave!==wave)return;const r=wave.getBoundingClientRect();const p=Math.max(0,Math.min(1,(e.clientX-r.left)/r.width));activeVoice.audio.currentTime=(activeVoice.audio.duration||0)*p}
+function seekVoice(e,wave){if(!activeVoice.audio||activeVoice.wave!==wave)return;const cx=e.touches?.[0]?.clientX??e.clientX;if(typeof cx!=='number')return;const r=wave.getBoundingClientRect();const p=Math.max(0,Math.min(1,(cx-r.left)/r.width));activeVoice.audio.currentTime=(activeVoice.audio.duration||0)*p}
 
 // Emoji picker
 const EMOJIS={'😀':['😀','😃','😄','😁','😆','😅','🤣','😂','🙂','😊','😇','🥰','😍','🤩','😘','😋','😛','😜','🤪','😝','🤗','🤭','🤫','🤔','😐','😏','😒','🙄','😬','😌','😔','😪','😴','😷','🤯','🥳','😎','🤓','😕','😟','🙁','😮','😲','😳','🥺','😢','😭','😱','😤','😡','🤬','😈','💀','💩','🤡','👻','👽','🤖'],'👋':['👋','🤚','✋','👌','🤏','✌️','🤞','🤟','🤘','🤙','👈','👉','👆','👇','☝️','👍','👎','✊','👊','👏','🙌','🤝','🙏','💪'],'❤️':['❤️','🧡','💛','💚','💙','💜','🖤','🤍','💔','❤️‍🔥','💕','💗','💖','💘','💝'],'🍕':['🍎','🍊','🍌','🍉','🍇','🍓','🍕','🍔','🍟','🍿','🍩','☕','🍺']};
